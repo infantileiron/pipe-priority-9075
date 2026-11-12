@@ -1,0 +1,75 @@
+name: ${COMPOSE_PROJECT_NAME:-pipe-priority}
+services:
+  frontend:
+    container_name: ${COMPOSE_PROJECT_NAME:-pipe-priority}-frontend
+    build: ./frontend
+    ports: ["${FRONTEND_PORT:-18201}:80"]
+    depends_on:
+      backend: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, --spider, http://127.0.0.1/]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  backend:
+    container_name: ${COMPOSE_PROJECT_NAME:-pipe-priority}-backend
+    build: ./backend
+    environment: &app-env
+      DATABASE_URL: mysql://${MYSQL_USER:-pipe_app}:${MYSQL_PASSWORD:-pipe-demo-2026}@db:3306/${MYSQL_DATABASE:-pipe_priority}
+      REDIS_HOST: redis
+      JWT_SECRET: ${JWT_SECRET:-replace-this-demo-secret-before-deployment}
+      SEED_DEMO: ${SEED_DEMO:-true}
+      ARTIFACT_DIR: /artifacts
+    ports: ["${BACKEND_PORT:-19201}:8000"]
+    volumes: [artifacts:/artifacts]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+  worker:
+    container_name: ${COMPOSE_PROJECT_NAME:-pipe-priority}-worker
+    build: ./backend
+    command: [python, -m, src.worker]
+    environment: *app-env
+    volumes: [artifacts:/artifacts]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, python, -c, "import os,time; assert time.time()-os.path.getmtime('/artifacts/worker.heartbeat')<120"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+  db:
+    image: mysql:8.0
+    container_name: ${COMPOSE_PROJECT_NAME:-pipe-priority}-db
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pipe_priority}
+      MYSQL_USER: ${MYSQL_USER:-pipe_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-pipe-demo-2026}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-pipe-root-2026}
+    ports: ["${DB_PORT:-17701}:3306"]
+    volumes: [db-data:/var/lib/mysql]
+    healthcheck:
+      test: [CMD-SHELL, 'mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 24
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-pipe-priority}-redis
+    command: [redis-server, --appendonly, 'yes']
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+volumes:
+  db-data:
+  redis-data:
+  artifacts:

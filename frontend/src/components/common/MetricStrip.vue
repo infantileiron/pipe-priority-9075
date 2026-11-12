@@ -1,0 +1,1 @@
+<script setup lang="ts">defineProps<{items:{label:string;value:string|number;note?:string}[]}>()</script><template><div class="metric-strip"><div v-for="item in items" :key="item.label"><small>{{item.label}}</small><strong class="mono">{{item.value}}</strong><span>{{item.note}}</span></div></div></template>

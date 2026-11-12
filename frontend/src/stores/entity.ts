@@ -1,0 +1,2 @@
+import {ref} from 'vue';import type {Entity} from '../types/domain';
+export function entityStore(loader:()=>Promise<Entity[]>){const items=ref<Entity[]>([]);const error=ref('');const loading=ref(false);async function reload(){loading.value=true;error.value='';try{items.value=await loader();}catch(e){error.value=String((e as Error).message);}finally{loading.value=false;}}return {items,error,loading,reload};}

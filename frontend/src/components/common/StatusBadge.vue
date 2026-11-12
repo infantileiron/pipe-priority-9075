@@ -1,0 +1,1 @@
+<script setup lang="ts">import {runStatuses,planStatuses} from '../../constants/enums';defineProps<{status:string}>();const names:Record<string,string>={...runStatuses,...planStatuses};</script><template><span class="status" :class="status"><i></i>{{names[status]||status}}</span></template>

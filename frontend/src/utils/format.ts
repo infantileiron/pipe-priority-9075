@@ -1,0 +1,1 @@
+export const pct=(n:number)=>Number.isFinite(n)?(n*100).toFixed(1)+'%':'—';export const num=(n:number)=>Number.isFinite(n)?n.toLocaleString('zh-CN'):'—';export const date=(x:string)=>x?new Date(x).toLocaleString('zh-CN'):'—';
