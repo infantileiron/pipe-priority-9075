@@ -17,9 +17,14 @@ def get(key):
 def listing():return db.all_rows('reports')
 def export(key):
     report=get(key);plan=get_plan(report['plan_id']);out=io.StringIO();writer=csv.writer(out)
-    writer.writerow(['priority','pipe_id','district','material','age','leak_probability','approved_by'])
+    writer.writerow(['priority','pipe_id','district','material','age','leak_probability','work_date','crew','approved_by'])
     def cell(value):
         text=str(value)
         return "'"+text if text[:1] in ('=','+','-','@') else text
-    for i,p in enumerate(plan['pipes'],1):writer.writerow([i,cell(p['pipe_id']),cell(p['district']),cell(p['material']),p['age'],round(p['probability'],6),cell(plan.get('approved_by',''))])
-    return '\ufeff'+out.getvalue()
+    for i,p in enumerate(plan['pipes'],1):
+        writer.writerow([
+            i,cell(p['pipe_id']),cell(p['district']),cell(p['material']),p['age'],
+            round(p['probability'],6),cell(plan.get('work_date','')),cell(plan.get('crew','')),
+            cell(plan.get('approved_by','')),
+        ])
+    return '﻿'+out.getvalue()
